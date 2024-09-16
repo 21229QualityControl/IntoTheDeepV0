@@ -19,16 +19,39 @@ import org.firstinspires.ftc.teamcode.pedroPathing.util.CustomPIDFCoefficients;
 import org.firstinspires.ftc.teamcode.pedroPathing.util.FeedForwardConstant;
 import org.firstinspires.ftc.teamcode.pedroPathing.util.PIDFController;
 
+/*
+Change all the "CHANGE THIS" things for your robot!
+
+Controls
+DRIVE:
+Left joystick: forward/backward/strafe
+Triggers: turn, Bumpers: slow turn (21229 drivers like this)
+
+ARM:
+Right joystick up/down: move arm up and down
+Y: Move the arm to the low basket preset position
+
+INTAKE:
+A: toggle intake
+B:  toggle reverse/score
+
+Wrist:
+X: toggle wrist between in and out
+ */
+
 @TeleOp(name = "Manual Drive", group = "Test")
 @Config
 public class ManualDrive extends OpMode {
     public static double ARM_F = -0.1;
     public static double TICK_PER_RAD = ((((1+(46.0/17.0))) * (1+(46.0/17.0))) * (1+(46.0/17.0)) * 28) / 2*Math.PI / 3.2;
+    // CHANGE THIS: The "/ 3.2" at the end of the previous line is the gear ratio, since we were using a 32 tooth sprocket on the arm and a 10 tooth sprocket on the motor
+    // Make sure to initialize the robot with the arm resting inside the robot
     public static double ARM_OFF = -2.01;
     public static CustomPIDFCoefficients PID = new CustomPIDFCoefficients(1, 0.02, 0.02, new ArmPIDF());
     public static double ARM_TARGET = 0.0;
     public static double ARM_SPEED = 0.05;
 
+    // CHANGE THIS: The wrist out position should be how you intake and wrist in should be how it is initialized
     public static double WRIST_OUT = 0.31;
     public static double WRIST_IN = 0.67;
 
@@ -111,7 +134,13 @@ public class ManualDrive extends OpMode {
         // Drivetrain
         double y = -gamepad1.left_stick_y; // Remember, Y stick is reversed!
         double x = gamepad1.left_stick_x;
-        double rx = (gamepad1.left_trigger - gamepad1.right_trigger) * 0.2;
+        double rx = (gamepad1.left_trigger - gamepad1.right_trigger) * 0.4;
+        if (gamepad1.left_bumper) {
+            rx += 0.15;
+        }
+        if (gamepad1.right_bumper) {
+            rx -= 0.15;
+        }
 
         leftFront.setPower(y + x + rx);
         leftRear.setPower(y - x + rx);
@@ -135,7 +164,6 @@ public class ManualDrive extends OpMode {
         if (gamepad1.y) {
             ARM_TARGET = ARM_LOWBASKET;
         }
-
 
         // Intake servo control
         if (gamepad1.a && !aPressed) {
@@ -161,6 +189,7 @@ public class ManualDrive extends OpMode {
 
         telemetry.addData("Arm Angle (deg)", Math.toDegrees(armAngle()));
         telemetry.addData("Arm Power", armPID.runPIDF());
+        telemetry.addData("Wrist Position", wristServo.getPosition());
         telemetry.update();
     }
 }
