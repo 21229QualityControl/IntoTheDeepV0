@@ -5,6 +5,8 @@ import static org.firstinspires.ftc.teamcode.pedroPathing.tuning.FollowerConstan
 import static org.firstinspires.ftc.teamcode.pedroPathing.tuning.FollowerConstants.rightFrontMotorName;
 import static org.firstinspires.ftc.teamcode.pedroPathing.tuning.FollowerConstants.rightRearMotorName;
 
+import android.util.Log;
+
 import com.acmerobotics.dashboard.config.Config;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
@@ -58,6 +60,8 @@ public class ManualDrive extends OpMode {
     public static double ARM_MIN = -2.25;
     public static double ARM_MAX = 1.9;
     public static double ARM_LOWBASKET = -0.2;
+    public static double ARM_INTAKE = -1.7;
+    public static double ARM_SPECIMEN = -0.25;
 
     static class ArmPIDF implements FeedForwardConstant {
 
@@ -122,6 +126,10 @@ public class ManualDrive extends OpMode {
     boolean bPressed = false;
     boolean xPressed = false;
 
+    private boolean epsilonEquals(double a, double b) {
+        return Math.abs(a - b) < 0.00001;
+    }
+
     /**
      * This runs the OpMode. This is only drive control with Pedro Pathing live centripetal force
      * correction.
@@ -152,7 +160,7 @@ public class ManualDrive extends OpMode {
         armPID.setTargetPosition(ARM_TARGET);
         armPID.updatePosition(armAngle());
         armMotor.setPower(armPID.runPIDF());
-        ARM_TARGET += gamepad1.right_stick_y * ARM_SPEED;
+        ARM_TARGET -= gamepad1.right_stick_y * ARM_SPEED;
 
         // Check that arm target is in right position
         if (ARM_TARGET < ARM_MIN) {
@@ -163,18 +171,27 @@ public class ManualDrive extends OpMode {
 
         if (gamepad1.y) {
             ARM_TARGET = ARM_LOWBASKET;
+            wristServo.setPosition(WRIST_OUT);
+        }
+        if (gamepad1.dpad_up) {
+            ARM_TARGET = ARM_SPECIMEN;
+            wristServo.setPosition(WRIST_IN);
+        }
+        if (gamepad1.dpad_down) {
+            ARM_TARGET = ARM_INTAKE;
+            wristServo.setPosition(WRIST_OUT);
         }
 
         // Intake servo control
         if (gamepad1.a && !aPressed) {
             aPressed = true;
-            intakeServo.setPower(intakeServo.getPower() == 0.0 ? -1.0 : 0.0);
+            intakeServo.setPower(epsilonEquals(intakeServo.getPower(), 0.0) ? -1.0 : 0.0);
         } else if (!gamepad1.a) {
             aPressed = false;
         }
         if (gamepad1.b && !bPressed) {
             bPressed = true;
-            intakeServo.setPower(intakeServo.getPower() == 0.0 ? 1.0 : 0.0);
+            intakeServo.setPower(epsilonEquals(intakeServo.getPower(), 0.0) ? 1.0 : 0.0);
         } else if (!gamepad1.b) {
             bPressed = false;
         }
@@ -182,14 +199,13 @@ public class ManualDrive extends OpMode {
         // Wrist control
         if (gamepad1.x && !xPressed) {
             xPressed = true;
-            wristServo.setPosition(wristServo.getPosition() == WRIST_IN ? WRIST_OUT : WRIST_IN);
+            wristServo.setPosition(epsilonEquals(wristServo.getPosition(), WRIST_IN) ? WRIST_OUT : WRIST_IN);
         } else if (!gamepad1.x) {
             xPressed = false;
         }
 
         telemetry.addData("Arm Angle (deg)", Math.toDegrees(armAngle()));
         telemetry.addData("Arm Power", armPID.runPIDF());
-        telemetry.addData("Wrist Position", wristServo.getPosition());
         telemetry.update();
     }
 }
